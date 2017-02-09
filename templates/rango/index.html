@@ -2,15 +2,22 @@
 {% load staticfiles %}
 
 {% block body_block %}
+	<p>{{ response.visits }}</p>
 	<h1>Rango says...</h1>
-	<div>hey there partner!</div>
 	<div>
+		{% if user.is_authenticated %}
+			howdy {{ user.username }}!
+		{% else %}
+			hey there partner!
+		{% endif %}
+	</div>
 
+	<div>
 	{% if categories %}
 	<h1>Most Liked Categories</h1>
 	<ul>
 		{% for category in categories %}
-			<li><a href="{% url 'show_category' category.slug %}">{{ category.name }}</a></li>
+			<li><a href="{% url 'rango:show_category' category.slug %}">{{ category.name }}</a></li>
 		{% endfor %}
 	</ul>
 	{% else %}
