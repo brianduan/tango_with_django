@@ -1,6 +1,10 @@
 from django import forms 
 from django.contrib.auth.models import User
 from rango.models import Page, Category, UserProfile
+# From stackoverflow 
+# http://stackoverflow.com/questions/21923838/django-1-6-automatically-remove-or-add-http-from-urlfield-from-form-data
+from django.forms.widgets import TextInput
+
 
 class CategoryForm(forms.ModelForm):
 	name = forms.CharField(max_length=128, help_text="Please enter the category name")
@@ -16,7 +20,8 @@ class CategoryForm(forms.ModelForm):
 
 class PageForm(forms.ModelForm):
 	title = forms.CharField(max_length=128, help_text="Please enter the title of the page.")
-	url = forms.URLField(max_length=200,help_text="Please enter the URL of the page.")
+	url = forms.URLField(max_length=200,help_text="Please enter the URL of the page.", 
+		initial="http://", widget=TextInput)
 	views = forms.IntegerField(widget=forms.HiddenInput(), initial=0)
 	
 	class Meta:
@@ -30,13 +35,15 @@ class PageForm(forms.ModelForm):
 		exclude = ('category',)
 		# or specify the fields to include (i.e. not include the category field)
 		#fields = ('title', 'url', 'views')
-	def clean_url(self):
-	  url = self.cleaned_data['url']
-	  # your cleaning here
-	  if url and not url.startswith('http://'):
-	  	url = 'http://' + url
-	  	# cleaned_data['url'] = url
-	  	return url
+	
+	# def clean_url(self):
+	#   url = self.cleaned_data['url']
+	#   # your cleaning here
+	#   if url and not url.startswith('http://'):
+	#   	url = 'http://' + url
+	#   	# cleaned_data['url'] = url
+	#   	return url
+
 	# def clean(self):
 	# 	cleaned_data = self.cleaned_data
 	# 	url = cleaned_data.get('url')
@@ -46,7 +53,7 @@ class PageForm(forms.ModelForm):
 	# 	if url and not url.startswith('http://'):
 	# 		url = 'http://' + url
 	# 		cleaned_data['url'] = url
-	# 		return cleaned_data
+	# 	return cleaned_data
 	
 class UserForm(forms.ModelForm):
 	password = forms.CharField(widget=forms.PasswordInput())
@@ -59,19 +66,3 @@ class UserProfileForm(forms.ModelForm):
 	class Meta:
 		model = UserProfile
 		fields = ('website', 'picture')
-
-		    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
