@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.shortcuts import render
+from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
@@ -10,6 +11,7 @@ from rango.forms import PageForm
 from rango.forms import UserForm, UserProfileForm
 from rango.models import Category
 from rango.models import Page
+from rango.models import UserProfile
 from rango.webhose_search import run_query
 
 # helper function for site counter (server side cookie version)
@@ -39,18 +41,112 @@ def get_server_side_cookie(request, cookie, default_val=None):
 	return val
 
 
-def search(request):
-	result_list = []
-	query = '';
+# def search(request):
+# 	result_list = []
+# 	query = '';
+# 	if request.method == 'POST':
+# 		query = request.POST['query'].strip()
+# 		if query:
+# 			# Run our Webhose search function to get the results list!
+# 			result_list = run_query(query)
+# 	context_dict = {'result_list': result_list, 'query': query}
+# 	return render(request, 'rango/search.html', context_dict)
+
+def track_url(request):
+	page_id = None
+	if request.method == "GET":
+		if 'page_id' in request.GET:
+			page_id = request.GET['page_id']
+			try:
+				# If we can't find anything, the .get() method raises a DoesNotExist exception.
+				# So the .get() method returns one model instance or raises an exception.
+				page = Page.objects.get(id=page_id)
+				page.views += 1
+				page.save()
+				return redirect(page.url)
+			except Page.DoesNotExist:
+				return redirect(reverse('rango:index'))				
+		else:
+			return redirect(reverse('rango:index'))
+	return None 
+
+def register_profile(request):
+	# A boolean value for telling the template
+	# whether the registration was successful.
+	# Set to False initially. Code changes value to
+	# True when registration succeeds.
+	registered = False
+
+	# If it's a HTTP POST, we're interested in processing form data.
 	if request.method == 'POST':
-		query = request.POST['query'].strip()
-		if query:
-			# Run our Webhose search function to get the results list!
-			result_list = run_query(query)
-	context_dict = {'result_list': result_list, 'query': query}
-	return render(request, 'rango/search.html', context_dict)
+		# Attempt to grab information from the raw form information.
+		profile_form = UserProfileForm(data=request.POST)
 
+		# If the form is valid...
+		if profile_form.is_valid():
+			# Now sort out the UserProfile instance.
+			# Since we need to set the user attribute ourselves,
+			# we set commit=False. This delays saving the model
+			# until we're ready to avoid integrity problems.
+			profile = profile_form.save(commit=False)
+			# profile.user = user
 
+			# Did the user provide a profile picture?
+			# If so, we need to get it from the input form and
+			# put it in the UserProfile model.
+			if 'picture' in request.FILES:
+				profile.picture = request.FILES['picture']
+
+			if request.user.is_authenticated():
+				profile.user = request.user
+				# Now we save the UserProfile model instance.
+				profile.save()
+				registered = True
+
+		else:
+			# Invalid form or forms - mistakes or something else?
+			# Print problems to the terminal.
+			print(profile_form.errors)
+
+	else:
+		# Not a HTTP POST, so we render our form using ModelForm instance.
+		# The form will be blank, ready for user input.
+		profile_form = UserProfileForm()
+
+	# Render the template depending on the context.
+	return render(request, 'rango/profile_registration.html',
+	{'profile_form': profile_form,
+	'registered': registered}
+	)
+
+def profile(request):
+	context_dict = {}
+	if request.method == 'POST':
+		if request.user.is_authenticated():
+			request.user.username = request.POST.get("username")
+			request.user.email = request.POST.get("email")
+			user_profile = UserProfile.objects.get(user=request.user)
+			user_profile.website = request.POST.get("website")
+			if 'picture' in request.FILES:
+				user_profile.picture = request.FILES['picture']
+			user_profile.save()
+			context_dict['username'] = request.user.username
+			context_dict['email'] = request.user.email
+			context_dict['website'] = user_profile.website
+			context_dict['picture'] = user_profile.picture
+			context_dict['user_profile'] = user_profile
+			request.user.save()
+		else:
+			pass
+	else:
+		# It's a GET request
+		context_dict['username'] = request.user.username
+		context_dict['email'] = request.user.email
+		user_profile = UserProfile.objects.get(user=request.user)
+		context_dict['website'] = user_profile.website
+		context_dict['picture'] = user_profile.picture
+		context_dict['user_profile'] = user_profile
+	return render(request, 'rango/profile.html', context_dict)
 
 def index(request):
 	#request.session.set_test_cookie()
@@ -105,12 +201,26 @@ def show_category(request, category_name_slug):
 		# the database to the context dictionary.
 		# We'll use this in the template to verify that the category exists.
 		context_dict['category'] = category
+
+		#handle a HTTP POST request for search functionality
+		result_list = []
+		query = '';
+		if request.method == 'POST':
+			query = request.POST['query'].strip()
+			if query:
+				# Run our Webhose search function to get the results list!
+				result_list = run_query(query)
+		context_dict['result_list'] = result_list
+		context_dict['query'] = query 
+		
 	except Category.DoesNotExist:
 		# We get here if we didn't find the specified category.
 		# Don't do anything 
 		# the template will display the "no category" message for us.
 		context_dict['pages'] = None
 		context_dict['category'] = None
+		context_dict['result_list'] = None
+		context_dict['query'] = None
 	return render(request, 'rango/category.html', context_dict)
 
 @login_required

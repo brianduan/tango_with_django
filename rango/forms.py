@@ -63,6 +63,9 @@ class UserForm(forms.ModelForm):
 		fields = ('username', 'email', 'password')
 
 class UserProfileForm(forms.ModelForm):
+	website = forms.URLField(max_length=200,help_text="Please enter the URL of the page.", 
+		initial="http://", widget=TextInput, required=False)
+	picture = forms.ImageField(required=False)
 	class Meta:
 		model = UserProfile
 		fields = ('website', 'picture')

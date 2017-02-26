@@ -12,7 +12,7 @@
 		{% if pages %}
 			<ul>
 				{% for page in pages %}
-					<li><a href="{{ page.url }}">{{ page.title }}</a></li>
+					<li><a href="{% url 'rango:goto' %}?page_id={{page.id}}">{{ page.title }}</a></li>
 				{% endfor %}
 			</ul>
 		{% else %}
@@ -21,9 +21,38 @@
 
 		{% if user.is_authenticated %}
 			<a href="{% url 'rango:add_page' category.slug %}">Add a Page</a>
-		{% endif %}
-	{% else %}
+			<br>
+			<br>
+			<div>
+				<h1>Search with Rango</h1>
+				<br>
+				<form class="form-inline" id="user_form" method="post" action="{% url 'rango:show_category' category.slug %}">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="text" size="50" class="form-control" name="query" value="{{ query }}" id="query">
+					</div>
+					<button class="btn btn-primary" type="submit" name="submit" value="Search">Search</button>
+				</form>
+				<br>
+				<div>
+					{% if result_list %}
+						<h3>Results</h3>
+						<!-- Display search results in an ordered list -->
+						<div class="list-group">
+							{% for result in result_list %}
+								<div class="list-group-item">
+									<h4 class="list-group-item-heading">
+										<a href="{{ result.link }}">{{ result.title }}</a>
+									</h4>
+									<p>{{ result.summary }}</p>
+								</div>
+							{% endfor %}
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		{% endif %} {# end of if user.is_authenticated #} 
+	{% else %} {# end of if category #} 
 		The specified category does not exist!
 	{% endif %}
 {% endblock %}
-		
