@@ -15,6 +15,61 @@ from rango.models import Page
 from rango.models import UserProfile
 from rango.webhose_search import run_query
 
+@login_required
+def auto_add_page(request):
+	cat_id = None
+	url = None
+	title = None
+	context_dict = {}
+	if request.method == 'GET':
+		cat_id = request.GET['category_id']
+		url = request.GET['url']
+		title = request.GET['title']
+		if cat_id:
+			category = Category.objects.get(id=int(cat_id))
+			p = Page.objects.get_or_create(category=category,title=title, url=url)
+			pages = Page.objects.filter(category=category).order_by('-views')
+			# Adds our results list to the template context under name pages.
+			context_dict['pages'] = pages
+	return render(request, 'rango/page_list.html', context_dict) 
+
+# helper function to find all the categories that start with the string supplied
+def get_category_list(max_results=0, starts_with=''):
+	cat_list = []
+	if starts_with:
+		cat_list = Category.objects.filter(name__istartswith=starts_with)
+	if max_results > 0:
+		if len(cat_list) > max_results:
+			cat_list = cat_list[:max_results]
+	return cat_list
+
+#Using the get_category_list() function, create a view that returns the top eight matching results
+def suggest_category(request):
+	cat_list = []
+	starts_with = ''
+	if request.method == 'GET':
+		starts_with = request.GET['suggestion']
+	cat_list = get_category_list(8, starts_with)
+	#provide a list of all the categories as a default
+	if len(cat_list) == 0:
+		cat_list = Category.objects.all()
+	return render(request, 'rango/cats.html', {'cats': cat_list })
+
+
+@login_required
+def like_category(request):
+	cat_id = None
+	if request.method == 'GET':
+		cat_id = request.GET['category_id']
+		likes = 0
+		if cat_id:
+			cat = Category.objects.get(id=int(cat_id))
+			if cat:
+				likes = cat.likes + 1
+				cat.likes = likes
+				cat.save()
+	return HttpResponse(likes)
+
 # helper function for site counter (server side cookie version)
 def visitor_cookie_handler(request):
 	visits = int(get_server_side_cookie(request, 'visits', '1'))

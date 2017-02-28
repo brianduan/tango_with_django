@@ -21,10 +21,13 @@
 	<div class="row marketing">
 	  <div class="col-lg-6">
 	    {% if categories %}
-	    <h1>Most Liked Categories</h1>
+	    <h1><i class="fa fa-book" aria-hidden="true"></i> Most Liked Categories</h1>
 	    <ul class="list-group">
 	    	{% for category in categories %}
-	    		<li class="list-group-item"><a href="{% url 'rango:show_category' category.slug %}">{{ category.name }}</a></li>
+	    		<li class="list-group-item">
+	    			<a href="{% url 'rango:show_category' category.slug %}">{{ category.name }}</a> &nbsp;
+	    			<span class="badge badge-pill badge-primary">{{category.likes}}</span>
+	    		</li>
 	    	{% endfor %}
 	    </ul>
 	    {% else %}
@@ -34,10 +37,13 @@
 
 	  <div class="col-lg-6">
 	    {% if pages %}
-	    <h1>Most Viewed Pages</h1>
+	    <h1><i class="fa fa-bookmark" aria-hidden="true"></i> Most Viewed Pages</h1>
 	    <ul class="list-group">
 	    	{% for page in pages %}
-	    		<li class="list-group-item"><a href="{{ page.url }}">{{ page.title }}</a></li>
+	    		<li class="list-group-item">
+	    			<a href="{{ page.url }}">{{ page.title }}</a> &nbsp;
+	    			<span class="badge badge-pill badge-info">{{page.views}}</span>
+	    		</li>
 	    	{% endfor %}
 	    </ul>
 	    {% else %}
@@ -46,9 +52,9 @@
 	  </div>
 	</div>
 
-	<div>
+	<!-- <div>
 		<img src="{% static "images/rango.jpg" %}" alt="Picture of Rango" />
-	</div>
+	</div> -->
 {% endblock %}
 
 		
